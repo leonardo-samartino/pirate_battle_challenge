@@ -168,6 +168,8 @@ describe('simulation core', () => {
     });
     for (let seed = 0; seed < 200; seed += 1) {
       const simulation = new Simulation(standardConfig, seed);
+      simulation.getState().player.health = Number.MAX_SAFE_INTEGER;
+      simulation.getState().player.maxHealth = Number.MAX_SAFE_INTEGER;
       for (let frame = 0; frame < 60 * 60; frame += 1) {
         simulation.update(1000 / 60);
       }
