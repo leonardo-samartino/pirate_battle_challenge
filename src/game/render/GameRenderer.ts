@@ -6,12 +6,14 @@ import {
   type Application,
 } from 'pixi.js';
 import type { GameConfig } from '../config';
-import type { Enemy, MatchState, PlayerShip, Projectile, SimEvent, Vector2 } from '../sim/types';
+import type { Enemy, MatchState, PlayerShip, SimEvent, Vector2 } from '../sim/types';
 import type { AssetName } from './assetManifest';
 import type { LoadedAssets } from './AssetLoader';
 
 // Ship art faces down, while simulation rotation zero faces right (+x).
 const SHIP_ART_FORWARD_OFFSET = -Math.PI / 2;
+const SHIP_ART_WIDTH_SCALE = 2.5;
+const SHIP_ART_HEIGHT_SCALE = 4.25;
 
 interface ShipView {
   sprite: Sprite;
@@ -30,6 +32,12 @@ interface IslandView {
   mask: Graphics;
 }
 
+const SOUND_ASSETS = {
+  shot: '/assets/sounds/cannon_fire_1.wav',
+  hit: '/assets/sounds/ship_wood_hit_1.wav',
+  explosion: '/assets/sounds/ship_explosion_1.wav',
+} as const;
+
 export class GameRenderer {
   private readonly app: Application;
   private readonly config: GameConfig;
@@ -44,6 +52,7 @@ export class GameRenderer {
   private readonly projectileViews = new Map<string, Sprite>();
   private readonly effectViews: EffectView[] = [];
   private readonly islandViews: IslandView[] = [];
+  private readonly sounds = new Map<keyof typeof SOUND_ASSETS, HTMLAudioElement>();
   private readonly background: Sprite;
   private readonly resizeObserver: ResizeObserver;
   private destroyed = false;
@@ -57,6 +66,9 @@ export class GameRenderer {
     this.world.addChild(this.water, this.islands, this.projectiles, this.ships, this.effects);
     this.water.addChild(this.background);
     this.app.stage.addChild(this.world);
+    (Object.keys(SOUND_ASSETS) as Array<keyof typeof SOUND_ASSETS>).forEach((name) => {
+      this.sounds.set(name, new Audio(SOUND_ASSETS[name]));
+    });
     this.resizeObserver = new ResizeObserver(() => this.resize(container.clientWidth, container.clientHeight));
     this.resizeObserver.observe(container);
     this.resize(container.clientWidth, container.clientHeight);
@@ -102,6 +114,12 @@ export class GameRenderer {
     });
     this.projectileViews.forEach((sprite) => sprite.destroy());
     this.effectViews.forEach((effect) => effect.sprite.destroy());
+    this.sounds.forEach((sound) => {
+      sound.pause();
+      sound.currentTime = 0;
+      sound.src = '';
+    });
+    this.sounds.clear();
     this.world.destroy({ children: true });
     this.shipViews.clear();
     this.islandViews.length = 0;
@@ -176,8 +194,8 @@ export class GameRenderer {
     }
     view.sprite.position.set(ship.position.x, ship.position.y);
     view.sprite.rotation = ship.rotation + SHIP_ART_FORWARD_OFFSET;
-    view.sprite.width = ship.radius * 2.5;
-    view.sprite.height = ship.radius * 2.5;
+    view.sprite.width = ship.radius * SHIP_ART_WIDTH_SCALE;
+    view.sprite.height = ship.radius * SHIP_ART_HEIGHT_SCALE;
     view.healthBackground.clear().roundRect(-ship.radius, 0, ship.radius * 2, 4, 2).fill(0x26100d);
     view.healthFill.clear().roundRect(-ship.radius, 0, ship.radius * 2 * Math.max(0, ship.health / ship.maxHealth), 4, 2).fill(isPlayer ? 0x54d66b : 0xed544c);
     view.healthBackground.position.set(ship.position.x, ship.position.y - ship.radius - 12);
@@ -221,10 +239,26 @@ export class GameRenderer {
 
   private applyEvents(events: readonly SimEvent[]): void {
     events.forEach((event) => {
-      if (event.type === 'shotFired') this.addEffect(event.projectile.position, 'muzzle', 0.12, event.projectile.direction);
-      if (event.type === 'hit') this.addEffect(event.position, 'smoke', 0.2);
-      if (event.type === 'shipDestroyed') this.addEffect(event.position, 'explosion', 0.5);
+      if (event.type === 'shotFired') {
+        this.addEffect(event.projectile.position, 'muzzle', 0.12, event.projectile.direction);
+        this.playSound('shot');
+      }
+      if (event.type === 'hit') {
+        this.addEffect(event.position, 'smoke', 0.2);
+        this.playSound('hit');
+      }
+      if (event.type === 'shipDestroyed') {
+        this.addEffect(event.position, 'explosion', 0.5);
+        this.playSound('explosion');
+      }
     });
+  }
+
+  private playSound(name: keyof typeof SOUND_ASSETS): void {
+    const sound = this.sounds.get(name);
+    if (!sound) return;
+    sound.currentTime = 0;
+    void sound.play().catch(() => undefined);
   }
 
   private addEffect(position: Vector2, name: 'muzzle' | 'smoke' | 'explosion', duration: number, directionValue?: Vector2): void {

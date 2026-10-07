@@ -4,7 +4,7 @@ export interface RandomResult {
 }
 
 export function nextRandom(state: number): RandomResult {
-  let nextState = (state + 0x6d2b79f5) | 0;
+  const nextState = (state + 0x6d2b79f5) | 0;
   let value = Math.imul(nextState ^ (nextState >>> 15), nextState | 1);
   value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
 

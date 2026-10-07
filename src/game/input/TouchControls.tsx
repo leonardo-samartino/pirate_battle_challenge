@@ -39,7 +39,7 @@ export function TouchControls({ onChange, disabled = false }: TouchControlsProps
   };
 
   return (
-    <div className="touch-controls" aria-label="Touch controls">
+    <div className="touch-controls" aria-label="Touch controls" data-dialog-background>
       <div className="touch-portrait-message">Rotate your device to landscape.</div>
       {controls.map(({ command, label, className }) => (
         <button

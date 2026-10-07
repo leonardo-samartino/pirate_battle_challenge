@@ -18,6 +18,7 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
     const host = hostRef.current;
     if (!host) return;
     let cancelled = false;
+    let cleanedUp = false;
     let app: Application | undefined;
     let renderer: GameRenderer | undefined;
     let tickerCallback: ((ticker: { deltaMS: number }) => void) | undefined;
@@ -35,7 +36,7 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
           resolution: window.devicePixelRatio || 1,
           autoDensity: true,
         });
-        if (cancelled) {
+        if (cancelled || cleanedUp) {
           nextApp.destroy(true, { children: true, texture: false, textureSource: false });
           return;
         }
@@ -43,7 +44,7 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
         host.appendChild(app.canvas);
         renderer = new GameRenderer(app, simulation.getConfig(), assets, host);
         tickerCallback = (ticker) => {
-          if (!renderer || cancelled) return;
+          if (cleanedUp || cancelled || !renderer || !app) return;
           simulation.update(ticker.deltaMS);
           const state = simulation.getState();
           renderer.render(state, simulation.drainEvents(), ticker.deltaMS / 1000);
@@ -62,12 +63,22 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
     void start();
     return () => {
       cancelled = true;
-      if (app && tickerCallback) app.ticker.remove(tickerCallback);
+      if (cleanedUp) return;
+      cleanedUp = true;
+      if (app && tickerCallback) {
+        app.ticker.remove(tickerCallback);
+        tickerCallback = undefined;
+      }
       renderer?.destroy();
-      if (app) app.destroy(true, { children: true, texture: false, textureSource: false });
-      if (app?.canvas.parentElement === host) host.removeChild(app.canvas);
+      renderer = undefined;
+      if (app) {
+        const canvas = app.canvas;
+        app.destroy(true, { children: false, texture: false, textureSource: false });
+        if (canvas.parentElement === host) host.removeChild(canvas);
+        app = undefined;
+      }
     };
   }, [onLoadError, onLoadProgress, simulation]);
 
-  return <div ref={hostRef} className="game-canvas" />;
+  return <div ref={hostRef} className="game-canvas" data-dialog-background />;
 }

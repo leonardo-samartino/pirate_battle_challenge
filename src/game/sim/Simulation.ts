@@ -53,6 +53,14 @@ export class Simulation {
     this.input = { ...EMPTY_INPUT };
   }
 
+  public abandon(): void {
+    if (this.state.status !== 'running' && this.state.status !== 'paused') return;
+    this.state.status = 'ended';
+    this.accumulatorSeconds = 0;
+    this.input = { ...EMPTY_INPUT };
+    this.events = [];
+  }
+
   public restart(seed = this.initialSeed): void {
     this.state = createMatch(this.config, seed);
     this.accumulatorSeconds = 0;

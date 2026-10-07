@@ -222,4 +222,18 @@ describe('simulation core', () => {
     expect(simulation.getState()).toEqual(createMatch(config, 42));
     expect(simulation.drainEvents()).toEqual([]);
   });
+
+  it('abandons an active match without advancing or emitting a result event', () => {
+    const simulation = new Simulation(config, 42);
+    simulation.update(100);
+    const beforeAbandon = structuredClone(simulation.getState());
+
+    simulation.abandon();
+    simulation.update(1000);
+
+    expect(simulation.getState().status).toBe('ended');
+    expect(simulation.getState().elapsedSeconds).toBe(beforeAbandon.elapsedSeconds);
+    expect(simulation.getState().endReason).toBeUndefined();
+    expect(simulation.drainEvents()).toEqual([]);
+  });
 });
