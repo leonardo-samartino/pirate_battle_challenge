@@ -14,7 +14,8 @@ import { uiAssets, type UiAssetName } from './ui/uiAssets';
 import { useFocusTrap } from './ui/useFocusTrap';
 import { ScenarioPanel } from './ui/ScenarioPanel';
 import { PLAYER_NAME, getPlayerId } from './api/player';
-import { enqueueMatch, flushOutbox, isPending, submissionStatus, submitPending } from './api/outbox';
+import { enqueueMatch, flushOutbox, isPending, submissionStatus, submitPending, type SubmitRecord } from './api/outbox';
+import { useSubmitMatch } from './api/hooks';
 import { getScenario, reset as resetScenario } from './mocks/scenarios';
 import './App.css';
 
@@ -44,6 +45,7 @@ function App() {
     if (!saved) return 'Pending';
     return submissionStatus(saved.matchId) === 'failed' ? 'Failed' : isPending(saved.matchId) ? 'Pending' : 'Saved';
   });
+  const submitMutation = useSubmitMatch();
   const snapshot = useSyncExternalStore(hudStore.subscribe, hudStore.getSnapshot);
   const matchIds = useRef(new WeakMap<Simulation, string>());
   const completedMatches = useRef(new WeakSet<Simulation>());
@@ -136,11 +138,12 @@ function App() {
     setLastResult(result);
     enqueueMatch({ ...result, playerName: PLAYER_NAME });
     setRecordStatus('Saving...');
-    void submitPending(result.matchId).then(() => setRecordStatus('Saved')).catch((error: unknown) => {
+    const submit: SubmitRecord = (record) => submitMutation.mutateAsync({ record });
+    void submitPending(result.matchId, undefined, submit).then(() => setRecordStatus('Saved')).catch((error: unknown) => {
       setRecordStatus((error as { retryable?: boolean }).retryable === false ? 'Failed' : 'Pending');
     });
     setScreen('result');
-  }, []);
+  }, [submitMutation]);
 
   useEffect(() => {
     if (screen === 'playing' && simulation?.getState().status === 'ended') finishMatch(simulation);
@@ -172,7 +175,7 @@ function App() {
   }
 
   if (screen === 'result' && lastResult) {
-    return <ResultScreen lastResult={lastResult} recordStatus={recordStatus} onRetry={() => { setRecordStatus('Saving...'); void submitPending(lastResult.matchId).then(() => setRecordStatus('Saved')).catch(() => setRecordStatus('Pending')); }} onPlayAgain={startMatch} onMenu={() => setScreen('menu')} />;
+    return <ResultScreen lastResult={lastResult} recordStatus={recordStatus} onRetry={() => { setRecordStatus('Saving...');     void submitPending(lastResult.matchId, undefined, (record) => submitMutation.mutateAsync({ record })).then(() => setRecordStatus('Saved')).catch((error: unknown) => setRecordStatus((error as { retryable?: boolean }).retryable === false ? 'Failed' : 'Pending')); }} onPlayAgain={startMatch} onMenu={() => setScreen('menu')} />;
   }
 
   function ResultScreen({ lastResult, recordStatus, onRetry, onPlayAgain, onMenu }: { lastResult: MatchResult; recordStatus: RecordStatus; onRetry: () => void; onPlayAgain: () => void; onMenu: () => void }) {

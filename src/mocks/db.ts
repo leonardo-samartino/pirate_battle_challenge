@@ -1,5 +1,5 @@
 import type { ApiErrorBody, MatchRecord } from '../api/contracts';
-import { fixtureRecords } from './fixtures';
+import { DEFAULT_FIXTURE_CONFIG, fixtureRecords, fixtureRecordsForConfig } from './fixtures';
 
 const STORAGE_KEY = 'pirate-battle:confirmed-records:v1';
 let confirmedRecords: MatchRecord[] = loadRecords();
@@ -23,8 +23,13 @@ function persist(): void {
   }
 }
 
-export function allRecords(empty = false): MatchRecord[] {
-  return empty ? [] : [...fixtureRecords, ...confirmedRecords];
+export function allRecords(empty = false, config = DEFAULT_FIXTURE_CONFIG): MatchRecord[] {
+  if (empty) return [];
+  const fixtures = config.sessionDurationSeconds === DEFAULT_FIXTURE_CONFIG.sessionDurationSeconds
+    && config.enemySpawnIntervalSeconds === DEFAULT_FIXTURE_CONFIG.enemySpawnIntervalSeconds
+    ? fixtureRecords
+    : fixtureRecordsForConfig(config);
+  return [...fixtures, ...confirmedRecords];
 }
 
 export function findConfirmed(matchId: string): MatchRecord | undefined {

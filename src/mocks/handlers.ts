@@ -68,7 +68,7 @@ export const handlers = [
       sessionDurationSeconds: queryNumber(url.searchParams.get('sessionDurationSeconds'), 120),
       enemySpawnIntervalSeconds: queryNumber(url.searchParams.get('enemySpawnIntervalSeconds'), 4),
     };
-    return HttpResponse.json(buildRanking(allRecords(scenario === 'empty'), query));
+    return HttpResponse.json(buildRanking(allRecords(scenario === 'empty', query), query));
   }),
   http.get('*/api/history', async ({ request }) => {
     const endpoint = 'history';

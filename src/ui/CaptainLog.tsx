@@ -29,9 +29,9 @@ export interface HistoryRow {
 export function Pagination({ page, totalPages, onChange }: PageProps) {
   return (
     <div className="pagination">
-      <button type="button" onClick={() => onChange(Math.max(1, page - 1))} disabled={page === 1}>Previous</button>
+      <button type="button" onClick={() => onChange(Math.max(1, page - 1))} disabled={totalPages <= 1 || page === 1}>Previous</button>
       <span>PAGE {page} OF {totalPages}</span>
-      <button type="button" onClick={() => onChange(Math.min(totalPages, page + 1))} disabled={page === totalPages}>Next</button>
+      <button type="button" onClick={() => onChange(Math.min(totalPages, page + 1))} disabled={totalPages <= 1 || page === totalPages}>Next</button>
     </div>
   );
 }
@@ -76,7 +76,11 @@ export function CaptainLog({ onClose, lastResult, options }: CaptainLogProps) {
   const ranking = useRanking(page, options);
   const history = useHistory(page);
   const activeQuery = tab === 'ranking' ? ranking : history;
+  const refetchActive = tab === 'ranking' ? ranking.refetch : history.refetch;
   const totalPages = activeQuery.data?.totalPages ?? 1;
+  React.useEffect(() => {
+    void refetchActive();
+  }, [refetchActive, tab]);
   React.useEffect(() => {
     const timer = window.setInterval(() => setScenario(getScenario()), 250);
     return () => window.clearInterval(timer);

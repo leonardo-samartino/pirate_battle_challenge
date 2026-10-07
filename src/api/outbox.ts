@@ -52,22 +52,28 @@ function remove(matchId: string): void {
   persist();
 }
 
-async function send(entry: PendingSubmission, client: QueryClient): Promise<MatchRecord> {
-  const result = await submitMatch(entry.record);
+export type SubmitRecord = (record: MatchRecord) => Promise<MatchRecord>;
+
+async function send(entry: PendingSubmission, client: QueryClient, submit: SubmitRecord): Promise<MatchRecord> {
+  const result = await submit(entry.record);
   remove(entry.record.matchId);
   await client.invalidateQueries({ queryKey: ['ranking'] });
   await client.invalidateQueries({ queryKey: ['history', entry.record.playerId] });
   return result;
 }
 
-export function submitPending(matchId: string, client: QueryClient = defaultQueryClient): Promise<MatchRecord> {
+export function submitPending(
+  matchId: string,
+  client: QueryClient = defaultQueryClient,
+  submit: SubmitRecord = submitMatch,
+): Promise<MatchRecord> {
   const existing = inFlight.get(matchId);
   if (existing) return existing;
   const entry = entries.find((candidate) => candidate.record.matchId === matchId);
   if (!entry) return Promise.reject(new Error('This match is not pending.'));
   entry.attempts += 1;
   persist();
-  const request = send(entry, client).catch((error: unknown) => {
+  const request = send(entry, client, submit).catch((error: unknown) => {
     const current = entries.find((candidate) => candidate.record.matchId === matchId);
     if (current) {
       current.lastError = error instanceof Error ? error.message : 'Submission failed.';
@@ -80,8 +86,22 @@ export function submitPending(matchId: string, client: QueryClient = defaultQuer
   return request;
 }
 
-export async function flushOutbox(client: QueryClient = defaultQueryClient): Promise<void> {
-  await Promise.allSettled(entries.filter((entry) => entry.status !== 'failed').map((entry) => submitPending(entry.record.matchId, client)));
+export async function flushOutbox(client: QueryClient = defaultQueryClient, submit: SubmitRecord = submitMatch): Promise<void> {
+  const attempts = entries
+    .filter((entry) => entry.status !== 'failed')
+    .map(async (entry) => {
+      const request = submitPending(entry.record.matchId, client, submit);
+      await Promise.race([
+        request,
+        new Promise<void>((resolve) => setTimeout(resolve, 250)),
+      ]);
+      if (inFlight.get(entry.record.matchId) === request) inFlight.delete(entry.record.matchId);
+    });
+  await Promise.allSettled(attempts);
+}
+
+export function rehydrateOutbox(): void {
+  entries = load();
 }
 
 export function resetOutbox(): void {

@@ -102,6 +102,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .you-row { color: var(--gold-light); font-weight: 700; }
 .tabs, .pagination { display: flex; justify-content: center; gap: 10px; align-items: center; margin: 18px 0; }
 .tabs button, .pagination button { padding: 8px 12px; color: var(--ink); background: #173b5c; border: 1px solid var(--gold); cursor: pointer; }
+.pagination button:disabled { color: #8d9aa5; background: #26333d; border-color: #68737b; cursor: not-allowed; opacity: 0.75; }
 .scenario-panel { display: grid; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 13px; text-align: left; }
 .scenario-panel summary { color: var(--gold-light); cursor: pointer; font-weight: 700; }
 .scenario-panel select { padding: 6px; color: var(--ink); background: #071b35; border: 1px solid var(--gold); }
