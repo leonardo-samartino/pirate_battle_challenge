@@ -1,6 +1,11 @@
 import * as React from 'react';
 import { uiAssets } from './uiAssets';
 import { useFocusTrap } from './useFocusTrap';
+import { useHistory, useRanking } from '../api/hooks';
+import type { GameOptions } from '../game/config';
+import { getPlayerId } from '../api/player';
+import { getScenario, reset as resetScenario } from '../mocks/scenarios';
+import { flushOutbox } from '../api/outbox';
 
 interface PageProps {
   page: number;
@@ -60,25 +65,42 @@ export function EmptyState({ label }: { label: string }) {
 interface CaptainLogProps {
   onClose: () => void;
   lastResult?: HistoryRow;
+  options: GameOptions;
 }
 
-export function CaptainLog({ onClose, lastResult }: CaptainLogProps) {
+export function CaptainLog({ onClose, lastResult, options }: CaptainLogProps) {
   const [tab, setTab] = React.useState<'ranking' | 'history'>('ranking');
   const [page, setPage] = React.useState(1);
+  const [scenario, setScenario] = React.useState(getScenario);
   const dialogRef = useFocusTrap<HTMLElement>(onClose);
+  const ranking = useRanking(page, options);
+  const history = useHistory(page);
+  const activeQuery = tab === 'ranking' ? ranking : history;
+  const totalPages = activeQuery.data?.totalPages ?? 1;
+  React.useEffect(() => {
+    const timer = window.setInterval(() => setScenario(getScenario()), 250);
+    return () => window.clearInterval(timer);
+  }, []);
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
       <section ref={dialogRef} className="board-panel log-panel" role="dialog" aria-modal="true" aria-labelledby="captain-log-title" tabIndex={-1}>
         <button className="icon-button close-button" type="button" aria-label="Close Captain's Log" onClick={onClose}><img src={uiAssets.iconClose} alt="" aria-hidden="true" /></button>
         <h2 id="captain-log-title">Captain's Log</h2>
+        {scenario !== 'success' && <p className="scenario-banner" role="status">Network scenario: {scenario}<button type="button" onClick={() => { resetScenario(); void flushOutbox(); setScenario('success'); }}>Reset</button></p>}
+        {tab === 'ranking' && <p className="log-subtitle">{options.sessionDurationSeconds} SECOND BATTLES · {options.enemySpawnIntervalSeconds} SECOND SPAWN INTERVAL</p>}
         <div className="tabs" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'ranking'} onClick={() => { setTab('ranking'); setPage(1); }}>Ranking</button>
           <button type="button" role="tab" aria-selected={tab === 'history'} onClick={() => { setTab('history'); setPage(1); }}>Match History</button>
         </div>
-        {tab === 'ranking'
-          ? <RankingTable rows={[]} />
-          : <HistoryTable rows={lastResult ? [lastResult] : []} />}
-        <Pagination page={page} totalPages={1} onChange={setPage} />
+        {activeQuery.isLoading ? <p role="status">Loading...</p>
+          : activeQuery.isError ? <p role="alert">Unable to load records. <button type="button" onClick={() => void activeQuery.refetch()}>Retry</button></p>
+          : tab === 'ranking'
+            ? <RankingTable rows={(ranking.data?.items ?? []).map((row) => ({ name: row.playerName, score: row.score, isYou: row.playerId === getPlayerId() }))} />
+            : <HistoryTable rows={history.data?.items.length
+              ? history.data.items.map((row) => ({ date: row.date, score: row.score, durationSeconds: row.durationSeconds, endReason: row.endReason === 'time' ? 'Time up' : 'Defeated' }))
+              : (lastResult ? [lastResult] : [])} />}
+        {activeQuery.isFetching && !activeQuery.isLoading && <span role="status">Refreshing...</span>}
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
       </section>
     </div>
   );

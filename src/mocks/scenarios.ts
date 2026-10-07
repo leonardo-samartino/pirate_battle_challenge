@@ -42,9 +42,10 @@ export function configureFromUrl(): void {
   const params = new URLSearchParams(window.location.search);
   const urlScenario = params.get('scenario');
   const storedScenario = readStorage('pirate-battle:scenario:v1');
-  setScenario(SCENARIOS.includes(urlScenario as ScenarioName)
+  const selected = SCENARIOS.includes(urlScenario as ScenarioName)
     ? urlScenario as ScenarioName
-    : SCENARIOS.includes(storedScenario as ScenarioName) ? storedScenario as ScenarioName : 'success');
+    : SCENARIOS.includes(storedScenario as ScenarioName) ? storedScenario as ScenarioName : 'success';
+  setScenario(selected);
   const urlSeed = Number(params.get('seed'));
   seed = Number.isFinite(urlSeed) ? urlSeed : 1;
   latencyEnabled = params.get('latency') !== 'off';

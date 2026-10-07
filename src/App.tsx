@@ -13,6 +13,9 @@ import { Hud } from './ui/Hud';
 import { uiAssets, type UiAssetName } from './ui/uiAssets';
 import { useFocusTrap } from './ui/useFocusTrap';
 import { ScenarioPanel } from './ui/ScenarioPanel';
+import { PLAYER_NAME, getPlayerId } from './api/player';
+import { enqueueMatch, flushOutbox, isPending, submissionStatus, submitPending } from './api/outbox';
+import { getScenario, reset as resetScenario } from './mocks/scenarios';
 import './App.css';
 
 type Screen = 'loading' | 'menu' | 'options' | 'playing' | 'result' | 'log';
@@ -36,7 +39,11 @@ function App() {
   const [options, setOptions] = useState<GameOptions>(loadGameOptions);
   const [simulation, setSimulation] = useState<Simulation>();
   const [lastResult, setLastResult] = useState<MatchResult | undefined>(loadLastMatchResult);
-  const [recordStatus, setRecordStatus] = useState<RecordStatus>('Pending');
+  const [recordStatus, setRecordStatus] = useState<RecordStatus>(() => {
+    const saved = loadLastMatchResult();
+    if (!saved) return 'Pending';
+    return submissionStatus(saved.matchId) === 'failed' ? 'Failed' : isPending(saved.matchId) ? 'Pending' : 'Saved';
+  });
   const snapshot = useSyncExternalStore(hudStore.subscribe, hudStore.getSnapshot);
   const matchIds = useRef(new WeakMap<Simulation, string>());
   const completedMatches = useRef(new WeakSet<Simulation>());
@@ -115,7 +122,7 @@ function App() {
     completedMatches.current.add(current);
     const result: MatchResult = {
       matchId: matchIds.current.get(current) ?? crypto.randomUUID(),
-      playerId: 'player',
+      playerId: getPlayerId(),
       date: new Date().toISOString(),
       score: state.score,
       durationSeconds: state.elapsedSeconds,
@@ -127,7 +134,11 @@ function App() {
     };
     saveLastMatchResult(result);
     setLastResult(result);
-    setRecordStatus('Saved');
+    enqueueMatch({ ...result, playerName: PLAYER_NAME });
+    setRecordStatus('Saving...');
+    void submitPending(result.matchId).then(() => setRecordStatus('Saved')).catch((error: unknown) => {
+      setRecordStatus((error as { retryable?: boolean }).retryable === false ? 'Failed' : 'Pending');
+    });
     setScreen('result');
   }, []);
 
@@ -148,7 +159,7 @@ function App() {
       <div className="controls-help"><strong>Controls</strong><span>W / Arrow keys: move and turn</span><span>Space: front fire · Q/E: broadsides</span><span>Touch controls are available on mobile.</span></div>
       {lastResult && <p>Last match: {lastResult.score} points, {lastResult.endReason === 'time' ? 'time up' : 'defeated'}.</p>}
       <MenuButton asset="buttonSecondary" icon="iconScore" type="button" onClick={() => setScreen('log')}>Captain's Log</MenuButton>
-      <ScenarioPanel />
+      <ScenarioBanner /><ScenarioPanel />
     </section></main>;
   }
 
@@ -157,16 +168,16 @@ function App() {
   }
 
   if (screen === 'log') {
-    return <CaptainLog onClose={() => setScreen('menu')} lastResult={lastResult ? { date: lastResult.date, score: lastResult.score, durationSeconds: lastResult.durationSeconds, endReason: lastResult.endReason === 'time' ? 'Time up' : 'Defeated' } : undefined} />;
+    return <CaptainLog options={options} onClose={() => setScreen('menu')} lastResult={lastResult ? { date: lastResult.date, score: lastResult.score, durationSeconds: lastResult.durationSeconds, endReason: lastResult.endReason === 'time' ? 'Time up' : 'Defeated' } : undefined} />;
   }
 
   if (screen === 'result' && lastResult) {
-    return <ResultScreen lastResult={lastResult} recordStatus={recordStatus} onPlayAgain={startMatch} onMenu={() => setScreen('menu')} />;
+    return <ResultScreen lastResult={lastResult} recordStatus={recordStatus} onRetry={() => { setRecordStatus('Saving...'); void submitPending(lastResult.matchId).then(() => setRecordStatus('Saved')).catch(() => setRecordStatus('Pending')); }} onPlayAgain={startMatch} onMenu={() => setScreen('menu')} />;
   }
 
-  function ResultScreen({ lastResult, recordStatus, onPlayAgain, onMenu }: { lastResult: MatchResult; recordStatus: RecordStatus; onPlayAgain: () => void; onMenu: () => void }) {
+  function ResultScreen({ lastResult, recordStatus, onRetry, onPlayAgain, onMenu }: { lastResult: MatchResult; recordStatus: RecordStatus; onRetry: () => void; onPlayAgain: () => void; onMenu: () => void }) {
     const dialogRef = useFocusTrap<HTMLElement>(onMenu);
-    return <main className="game-shell center-screen"><section ref={dialogRef} className="board-panel result-panel" role="dialog" aria-modal="true" aria-labelledby="result-title" tabIndex={-1}><h1 id="result-title">Match complete</h1><p>Score: {lastResult.score}</p><p>Time played: {Math.ceil(lastResult.durationSeconds)} seconds</p><p>Result: {lastResult.endReason === 'time' ? 'Time up' : 'Defeated'}</p><p role="status">Record status: {recordStatus}</p><MenuButton asset="buttonPrimary" icon="iconRestart" type="button" onClick={onPlayAgain}>Play Again</MenuButton><MenuButton asset="buttonSecondary" icon="iconHome" type="button" onClick={onMenu}>Main Menu</MenuButton></section></main>;
+    return <main className="game-shell center-screen"><section ref={dialogRef} className="board-panel result-panel" role="dialog" aria-modal="true" aria-labelledby="result-title" tabIndex={-1}><h1 id="result-title">Match complete</h1><p>Score: {lastResult.score}</p><p>Time played: {Math.ceil(lastResult.durationSeconds)} seconds</p><p>Result: {lastResult.endReason === 'time' ? 'Time up' : 'Defeated'}</p><p role="status">Record status: {recordStatus}</p>{recordStatus === 'Pending' && <><p>This record is pending and will retry when the connection returns.</p><button type="button" onClick={onRetry}>Retry</button></>}<MenuButton asset="buttonPrimary" icon="iconRestart" type="button" onClick={onPlayAgain}>Play Again</MenuButton><MenuButton asset="buttonSecondary" icon="iconHome" type="button" onClick={onMenu}>Main Menu</MenuButton></section></main>;
   }
 
   if (!simulation) return null;
@@ -176,6 +187,16 @@ function App() {
     <TouchControls onChange={(commands) => { touchCommands.current = commands; simulation.setInput(mergeInputCommands(keyboardCommands.current, commands)); }} disabled={snapshot.status !== 'running'} />
     {snapshot.status === 'paused' && <PauseOverlay onResume={resumeMatch} onOptions={() => { simulation.abandon(); setScreen('options'); }} onMenu={() => { simulation.abandon(); setScreen('menu'); }} />}
   </main>;
+}
+
+function ScenarioBanner() {
+  const [scenario, setScenario] = useState(getScenario);
+  useEffect(() => {
+    const timer = window.setInterval(() => setScenario(getScenario()), 250);
+    return () => window.clearInterval(timer);
+  }, []);
+  if (scenario === 'success') return null;
+  return <div className="scenario-banner" role="status">Network scenario: {scenario} <button type="button" onClick={() => { resetScenario(); void flushOutbox(); setScenario('success'); }}>Reset</button></div>;
 }
 
 function OptionsScreen({ options, onSave, onBack }: { options: GameOptions; onSave: (options: GameOptions) => void; onBack: () => void }) {

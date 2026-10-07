@@ -106,6 +106,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .scenario-panel summary { color: var(--gold-light); cursor: pointer; font-weight: 700; }
 .scenario-panel select { padding: 6px; color: var(--ink); background: #071b35; border: 1px solid var(--gold); }
 .scenario-panel button { justify-self: start; padding: 6px 10px; color: var(--ink); background: #173b5c; border: 1px solid var(--gold); cursor: pointer; }
+.scenario-banner { margin: 8px 0; padding: 8px 10px; color: #fff4c2; background: #7a1f1f; border: 1px solid #ffcc66; font-weight: 700; }
+.scenario-banner button { margin-left: 8px; padding: 4px 8px; color: var(--ink); background: #ffcc66; border: 0; cursor: pointer; }
 
 .hud { position: absolute; z-index: 4; top: 12px; left: 50%; display: flex; gap: 8px; align-items: center; transform: translateX(-50%); color: var(--ink); white-space: nowrap; }
 .hud-counter, .health-widget { position: relative; width: 160px; height: 56px; }
