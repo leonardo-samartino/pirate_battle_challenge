@@ -29,6 +29,9 @@ export function createMatch(config: GameConfig, seed: number): MatchState {
     islands,
     nextEntityId: 1,
     spawnTimerSeconds: config.enemySpawnIntervalSeconds,
+    spawnCount: 0,
+    spawnedChaser: false,
+    spawnedShooter: false,
     rngState: seed >>> 0,
   };
 }

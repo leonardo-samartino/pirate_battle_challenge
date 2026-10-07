@@ -73,6 +73,9 @@ export interface MatchState {
   islands: Island[];
   nextEntityId: number;
   spawnTimerSeconds: number;
+  spawnCount: number;
+  spawnedChaser: boolean;
+  spawnedShooter: boolean;
   rngState: number;
 }
 

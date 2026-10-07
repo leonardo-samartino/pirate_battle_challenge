@@ -34,6 +34,7 @@ export interface GameConfig {
   readonly spawn: {
     readonly minDistanceFromPlayer: number;
     readonly minDistanceFromIslandMargin: number;
+    readonly guaranteeBothTypesBySpawnIndex: number;
   };
   readonly spawnDistribution: SpawnDistribution;
   readonly player: {
@@ -81,7 +82,11 @@ const DEFAULT_BALANCE: BalanceConfig = {
     { id: 'island-2', x: 1000, y: 540, radius: 85 },
   ],
   radii: { player: 24, chaser: 22, shooter: 24, projectile: 5 },
-  spawn: { minDistanceFromPlayer: 260, minDistanceFromIslandMargin: 30 },
+  spawn: {
+    minDistanceFromPlayer: 260,
+    minDistanceFromIslandMargin: 30,
+    guaranteeBothTypesBySpawnIndex: 3,
+  },
   spawnDistribution: { chaserWeight: 3, shooterWeight: 1 },
   player: { health: 100, moveSpeed: 180, rotationSpeed: 3.2 },
   enemy: {
