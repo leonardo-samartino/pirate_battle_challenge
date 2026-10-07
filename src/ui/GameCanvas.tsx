@@ -4,6 +4,7 @@ import type { Simulation } from '../game/sim/Simulation';
 import { AssetLoader } from '../game/render/AssetLoader';
 import { GameRenderer } from '../game/render/GameRenderer';
 import { publishHudState } from '../game/hudStore';
+import { isE2EManualClock, registerE2EBridge, unregisterE2EBridge } from '../testing/e2eHooks';
 
 interface GameCanvasProps {
   simulation: Simulation;
@@ -43,9 +44,13 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
         app = nextApp;
         host.appendChild(app.canvas);
         renderer = new GameRenderer(app, simulation.getConfig(), assets, host);
+        const renderCurrentState = (): void => {
+          if (renderer) renderer.render(simulation.getState(), simulation.drainEvents(), 0);
+        };
+        registerE2EBridge({ simulation, render: renderCurrentState });
         tickerCallback = (ticker) => {
           if (cleanedUp || cancelled || !renderer || !app) return;
-          simulation.update(ticker.deltaMS);
+          if (!isE2EManualClock()) simulation.update(ticker.deltaMS);
           const state = simulation.getState();
           renderer.render(state, simulation.drainEvents(), ticker.deltaMS / 1000);
           hudElapsedMs += ticker.deltaMS;
@@ -77,6 +82,7 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
         if (canvas.parentElement === host) host.removeChild(canvas);
         app = undefined;
       }
+      unregisterE2EBridge(simulation);
     };
   }, [onLoadError, onLoadProgress, simulation]);
 

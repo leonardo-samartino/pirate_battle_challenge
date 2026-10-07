@@ -17,6 +17,7 @@ import { PLAYER_NAME, getPlayerId } from './api/player';
 import { enqueueMatch, flushOutbox, isPending, submissionStatus, submitPending, type SubmitRecord } from './api/outbox';
 import { useSubmitMatch } from './api/hooks';
 import { getScenario, reset as resetScenario } from './mocks/scenarios';
+import { getE2ESeed } from './testing/e2eHooks';
 import './App.css';
 
 type Screen = 'loading' | 'menu' | 'options' | 'playing' | 'result' | 'log';
@@ -110,7 +111,7 @@ function App() {
 
   const startMatch = useCallback(() => {
     const config = createGameConfigSnapshot(options);
-    const next = new Simulation(config, Math.floor(Math.random() * 0xffffffff));
+    const next = new Simulation(config, getE2ESeed() ?? Math.floor(Math.random() * 0xffffffff));
     matchIds.current.set(next, crypto.randomUUID());
     setSimulation(next);
     resetHudStore();
