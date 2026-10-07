@@ -12,6 +12,7 @@ import { GameCanvas } from './ui/GameCanvas';
 import { Hud } from './ui/Hud';
 import { uiAssets, type UiAssetName } from './ui/uiAssets';
 import { useFocusTrap } from './ui/useFocusTrap';
+import { ScenarioPanel } from './ui/ScenarioPanel';
 import './App.css';
 
 type Screen = 'loading' | 'menu' | 'options' | 'playing' | 'result' | 'log';
@@ -147,6 +148,7 @@ function App() {
       <div className="controls-help"><strong>Controls</strong><span>W / Arrow keys: move and turn</span><span>Space: front fire · Q/E: broadsides</span><span>Touch controls are available on mobile.</span></div>
       {lastResult && <p>Last match: {lastResult.score} points, {lastResult.endReason === 'time' ? 'time up' : 'defeated'}.</p>}
       <MenuButton asset="buttonSecondary" icon="iconScore" type="button" onClick={() => setScreen('log')}>Captain's Log</MenuButton>
+      <ScenarioPanel />
     </section></main>;
   }
 
