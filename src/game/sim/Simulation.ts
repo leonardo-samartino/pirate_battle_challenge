@@ -64,6 +64,10 @@ export class Simulation {
     return this.state;
   }
 
+  public getConfig(): GameConfig {
+    return this.config;
+  }
+
   public drainEvents(): SimEvent[] {
     const events = this.events;
     this.events = [];
