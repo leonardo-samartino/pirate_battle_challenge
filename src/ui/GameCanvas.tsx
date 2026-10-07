@@ -3,6 +3,7 @@ import { Application } from 'pixi.js';
 import type { Simulation } from '../game/sim/Simulation';
 import { AssetLoader } from '../game/render/AssetLoader';
 import { GameRenderer } from '../game/render/GameRenderer';
+import { publishHudState } from '../game/hudStore';
 
 interface GameCanvasProps {
   simulation: Simulation;
@@ -20,6 +21,7 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
     let app: Application | undefined;
     let renderer: GameRenderer | undefined;
     let tickerCallback: ((ticker: { deltaMS: number }) => void) | undefined;
+    let hudElapsedMs = 0;
 
     const start = async (): Promise<void> => {
       const loader = new AssetLoader();
@@ -43,7 +45,13 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
         tickerCallback = (ticker) => {
           if (!renderer || cancelled) return;
           simulation.update(ticker.deltaMS);
-          renderer.render(simulation.getState(), simulation.drainEvents(), ticker.deltaMS / 1000);
+          const state = simulation.getState();
+          renderer.render(state, simulation.drainEvents(), ticker.deltaMS / 1000);
+          hudElapsedMs += ticker.deltaMS;
+          if (hudElapsedMs >= 100) {
+            publishHudState(state, simulation.getConfig().sessionDurationSeconds);
+            hudElapsedMs = 0;
+          }
         };
         app.ticker.add(tickerCallback);
       } catch (error) {

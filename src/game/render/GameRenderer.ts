@@ -10,6 +10,9 @@ import type { Enemy, MatchState, PlayerShip, Projectile, SimEvent, Vector2 } fro
 import type { AssetName } from './assetManifest';
 import type { LoadedAssets } from './AssetLoader';
 
+// Ship art faces down, while simulation rotation zero faces right (+x).
+const SHIP_ART_FORWARD_OFFSET = -Math.PI / 2;
+
 interface ShipView {
   sprite: Sprite;
   healthBackground: Graphics;
@@ -20,6 +23,11 @@ interface ShipView {
 interface EffectView {
   sprite: Sprite;
   remainingSeconds: number;
+}
+
+interface IslandView {
+  sprite: Sprite;
+  mask: Graphics;
 }
 
 export class GameRenderer {
@@ -35,6 +43,7 @@ export class GameRenderer {
   private readonly shipViews = new Map<string, ShipView>();
   private readonly projectileViews = new Map<string, Sprite>();
   private readonly effectViews: EffectView[] = [];
+  private readonly islandViews: IslandView[] = [];
   private readonly background: Sprite;
   private readonly resizeObserver: ResizeObserver;
   private destroyed = false;
@@ -87,10 +96,15 @@ export class GameRenderer {
     this.destroyed = true;
     this.resizeObserver.disconnect();
     this.shipViews.forEach((view) => this.destroyShipView(view));
+    this.islandViews.forEach(({ sprite, mask }) => {
+      sprite.destroy();
+      mask.destroy();
+    });
     this.projectileViews.forEach((sprite) => sprite.destroy());
     this.effectViews.forEach((effect) => effect.sprite.destroy());
     this.world.destroy({ children: true });
     this.shipViews.clear();
+    this.islandViews.length = 0;
     this.projectileViews.clear();
     this.effectViews.length = 0;
   }
@@ -107,16 +121,23 @@ export class GameRenderer {
   }
 
   private syncIslands(state: MatchState): void {
-    while (this.islands.children.length < state.islands.length) {
+    while (this.islandViews.length < state.islands.length) {
       const sprite = new Sprite(this.texture('island'));
+      const mask = new Graphics();
       sprite.anchor.set(0.5);
-      this.islands.addChild(sprite);
+      sprite.mask = mask;
+      this.islands.addChild(sprite, mask);
+      this.islandViews.push({ sprite, mask });
     }
     state.islands.forEach((island, index) => {
-      const sprite = this.islands.children[index] as Sprite;
+      const islandView = this.islandViews[index];
+      if (!islandView) return;
+      const { sprite, mask } = islandView;
       sprite.position.set(island.position.x, island.position.y);
       sprite.width = island.radius * 2;
       sprite.height = island.radius * 2;
+      mask.position.set(island.position.x, island.position.y);
+      mask.clear().circle(0, 0, island.radius).fill(0xffffff);
     });
   }
 
@@ -154,7 +175,7 @@ export class GameRenderer {
       view.damaged = damaged;
     }
     view.sprite.position.set(ship.position.x, ship.position.y);
-    view.sprite.rotation = ship.rotation;
+    view.sprite.rotation = ship.rotation + SHIP_ART_FORWARD_OFFSET;
     view.sprite.width = ship.radius * 2.5;
     view.sprite.height = ship.radius * 2.5;
     view.healthBackground.clear().roundRect(-ship.radius, 0, ship.radius * 2, 4, 2).fill(0x26100d);
