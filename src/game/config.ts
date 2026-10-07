@@ -13,9 +13,28 @@ export interface SpawnDistribution {
   readonly shooterWeight: number;
 }
 
+export interface IslandConfig {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+}
+
 export interface GameConfig {
   readonly sessionDurationSeconds: number;
   readonly enemySpawnIntervalSeconds: number;
+  readonly arena: { readonly width: number; readonly height: number };
+  readonly islands: readonly IslandConfig[];
+  readonly radii: {
+    readonly player: number;
+    readonly chaser: number;
+    readonly shooter: number;
+    readonly projectile: number;
+  };
+  readonly spawn: {
+    readonly minDistanceFromPlayer: number;
+    readonly minDistanceFromIslandMargin: number;
+  };
   readonly spawnDistribution: SpawnDistribution;
   readonly player: {
     readonly health: number;
@@ -29,6 +48,8 @@ export interface GameConfig {
     readonly shooterMoveSpeed: number;
     readonly chaserRotationSpeed: number;
     readonly shooterRotationSpeed: number;
+    readonly shooterCooldownSeconds: number;
+    readonly shooterPreferredDistance: number;
   };
   readonly damage: {
     readonly playerProjectile: number;
@@ -44,6 +65,7 @@ export interface GameConfig {
     readonly frontSeconds: number;
     readonly sideSeconds: number;
   };
+  readonly weapon: { readonly sideSpacing: number };
   readonly shooterAttackRange: number;
 }
 
@@ -53,6 +75,13 @@ type BalanceConfig = Omit<
 >;
 
 const DEFAULT_BALANCE: BalanceConfig = {
+  arena: { width: 1280, height: 720 },
+  islands: [
+    { id: 'island-1', x: 280, y: 180, radius: 70 },
+    { id: 'island-2', x: 1000, y: 540, radius: 85 },
+  ],
+  radii: { player: 24, chaser: 22, shooter: 24, projectile: 5 },
+  spawn: { minDistanceFromPlayer: 260, minDistanceFromIslandMargin: 30 },
   spawnDistribution: { chaserWeight: 3, shooterWeight: 1 },
   player: { health: 100, moveSpeed: 180, rotationSpeed: 3.2 },
   enemy: {
@@ -62,10 +91,13 @@ const DEFAULT_BALANCE: BalanceConfig = {
     shooterMoveSpeed: 55,
     chaserRotationSpeed: 2.4,
     shooterRotationSpeed: 2,
+    shooterCooldownSeconds: 1.5,
+    shooterPreferredDistance: 300,
   },
   damage: { playerProjectile: 10, enemyProjectile: 8, chaserCollision: 25 },
   projectile: { speed: 360, range: 520, lifetimeSeconds: 2 },
   weaponCooldown: { frontSeconds: 0.35, sideSeconds: 0.8 },
+  weapon: { sideSpacing: 18 },
   shooterAttackRange: 420,
 };
 
@@ -101,11 +133,18 @@ export function createGameConfigSnapshot(
     ...DEFAULT_BALANCE,
     sessionDurationSeconds: options.sessionDurationSeconds,
     enemySpawnIntervalSeconds: options.enemySpawnIntervalSeconds,
+    arena: Object.freeze({ ...DEFAULT_BALANCE.arena }),
+    islands: Object.freeze(
+      DEFAULT_BALANCE.islands.map((island) => Object.freeze({ ...island })),
+    ),
+    radii: Object.freeze({ ...DEFAULT_BALANCE.radii }),
+    spawn: Object.freeze({ ...DEFAULT_BALANCE.spawn }),
     spawnDistribution: Object.freeze({ ...DEFAULT_BALANCE.spawnDistribution }),
     player: Object.freeze({ ...DEFAULT_BALANCE.player }),
     enemy: Object.freeze({ ...DEFAULT_BALANCE.enemy }),
     damage: Object.freeze({ ...DEFAULT_BALANCE.damage }),
     projectile: Object.freeze({ ...DEFAULT_BALANCE.projectile }),
     weaponCooldown: Object.freeze({ ...DEFAULT_BALANCE.weaponCooldown }),
+    weapon: Object.freeze({ ...DEFAULT_BALANCE.weapon }),
   });
 }

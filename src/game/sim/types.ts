@@ -1,3 +1,7 @@
+// World units are logical pixels. The y axis grows downward as it does in Pixi.
+// Rotations are radians: 0 faces +x and positive rotation is clockwise on screen.
+// Direction vectors are unit vectors.
+
 export interface Vector2 {
   x: number;
   y: number;
@@ -12,6 +16,12 @@ export interface Ship {
   radius: number;
 }
 
+export interface PlayerShip extends Ship {
+  frontCooldownSeconds: number;
+  leftCooldownSeconds: number;
+  rightCooldownSeconds: number;
+}
+
 export type EnemyType = 'chaser' | 'shooter';
 
 export interface Enemy extends Ship {
@@ -24,12 +34,14 @@ export type ProjectileOwner = 'player' | 'enemy';
 export interface Projectile {
   id: string;
   owner: ProjectileOwner;
+  ownerId: string;
   position: Vector2;
   direction: Vector2;
   speed: number;
   damage: number;
+  radius: number;
   distanceTravelled: number;
-  lifetimeSeconds: number;
+  ageSeconds: number;
 }
 
 export interface Island {
@@ -55,14 +67,22 @@ export interface MatchState {
   endReason?: EndReason;
   elapsedSeconds: number;
   score: number;
-  player: Ship;
+  player: PlayerShip;
   enemies: Enemy[];
   projectiles: Projectile[];
   islands: Island[];
+  nextEntityId: number;
+  spawnTimerSeconds: number;
+  rngState: number;
 }
 
 export type SimEvent =
   | { type: 'shotFired'; projectile: Projectile }
-  | { type: 'hit'; targetId: string; damage: number; sourceId?: string }
-  | { type: 'shipDestroyed'; shipId: string; owner: ProjectileOwner | 'collision' }
+  | { type: 'hit'; targetId: string; damage: number; sourceId?: string; position: Vector2 }
+  | {
+      type: 'shipDestroyed';
+      shipId: string;
+      owner: ProjectileOwner | 'collision';
+      position: Vector2;
+    }
   | { type: 'matchEnded'; reason: EndReason };
