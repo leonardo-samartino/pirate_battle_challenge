@@ -59,5 +59,19 @@ export async function openCaptainsLog(page: Page, tab: 'Ranking' | 'Match Histor
 }
 
 export async function setScenario(page: Page, scenario: string): Promise<void> {
+  await page.locator('details.scenario-panel').evaluate((element) => {
+    (element as HTMLDetailsElement).open = true;
+  });
   await page.locator('#network-scenario').selectOption(scenario);
+}
+
+export async function getHud(page: Page): Promise<unknown> {
+  return page.evaluate(() => window.__PIRATE_E2E__?.getHud());
+}
+
+export async function holdTouch(page: Page, label: string, milliseconds = 250): Promise<void> {
+  const button = page.getByRole('button', { name: label });
+  await button.dispatchEvent('pointerdown', { pointerId: 1, pointerType: 'touch', isPrimary: true });
+  await advance(page, milliseconds);
+  await button.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', isPrimary: true });
 }

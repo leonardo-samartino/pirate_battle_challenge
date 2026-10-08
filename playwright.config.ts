@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   expect: { timeout: 5_000, toHaveScreenshot: { animations: 'disabled', threshold: 0.1 } },
+  snapshotPathTemplate: '{testDir}/__screenshots__/{projectName}/{testFilePath}/{arg}{ext}',
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
