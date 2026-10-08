@@ -1,21 +1,36 @@
-# Pirate Battle Architecture
+# Architecture
 
-## Boundaries
+## React, PixiJS, and lifecycle
 
-React owns screen transitions, forms, dialogs, persistence wiring, and semantic HUD text. The simulation in `src/game/sim` owns all continuous match state and rules without importing React or PixiJS. `src/game/input` converts keyboard and pointer gestures into typed commands. `src/game/render` observes simulation state/events and owns Pixi display objects. `src/ui/GameCanvas.tsx` is the lifecycle bridge between React and Pixi.
+React owns menus, dialogs, forms, semantic HUD text, screen transitions, and persistence wiring. `GameCanvas` creates Pixi only after assets load, attaches one ticker callback, and destroys the callback, renderer, observer, audio, and Pixi application on cleanup. Cancellation guards make async loading safe under React StrictMode's mount/unmount/mount cycle.
 
-## Simulation
+The simulation is framework-independent. `Simulation` snapshots the typed `GameConfig` when a match starts, while `GameRenderer` observes state and drains presentation events. React is not rendered once per frame.
 
-`Simulation` accumulates capped real time and advances `step` at a fixed 1/60-second timestep. The immutable `GameConfig` snapshot is created when a match starts. `step` handles movement, island and arena collision, weapons, projectiles, enemy behavior, spawning, score, damage, and terminal states. Events are drained by the renderer for effects; the renderer never changes game rules.
+## Simulation, collisions, and balance
 
-## Rendering and cleanup
+Each ticker update is accumulated and stepped at a fixed 1/60 second. Movement, rotation, cooldowns, projectiles, damage, score, enemy AI, spawning, terminal state, arena bounds, and island collisions are implemented in `src/game/sim`. Ships and projectiles use circle collision checks. Islands are fixed at `(280,180,r70)` and `(1000,540,r85)`.
 
-`AssetLoader` loads and caches the manifest before combat, reports progress, and throws an `AssetLoadError` for visible retry handling. `GameRenderer` reuses maps of ship/projectile views, scales the logical arena uniformly with letterboxing, and destroys its display tree and observers on teardown. `GameCanvas` cancels async initialization, removes the ticker callback, destroys the renderer before the Pixi application, and guards cleanup for React StrictMode mount/unmount/mount.
+The defaults in `src/game/config.ts` are 120 seconds, 4-second spawns, 1280x720 arena, player health 100, movement 180 units/second, rotation 3.2 radians/second, Chaser/Shooter speeds 85/55, projectile damage 10/8, Chaser collision damage 25, projectile speed/range/lifetime 360/520/2 seconds, front/broadside cooldowns 0.35/0.8 seconds, and Shooter range 420. The player moves only forward by design; there is no reverse control. Options accept 60-180 seconds and 0.5-30-second spawn intervals. The match uses an immutable configuration snapshot.
 
-## Input, pause, and accessibility
+## Resources and local persistence
 
-Keyboard listeners exist only while the gameplay screen is active. Touch controls merge independent pointer commands, so movement and firing can be simultaneous. Pause clears commands and the simulation accumulator; blur and hidden-tab events pause automatically. `useFocusTrap` is shared by pause, Options, result, and Captain's Log to provide initial focus, keyboard cycling, Escape, opener restoration, and inert background content.
+`AssetLoader` loads and caches individual textures before combat and reports a visible retryable error. `GameRenderer` reuses entity views and releases display objects, masks, sounds, and observers. Versioned local-storage keys persist options, the player identity, the latest completed result, confirmed records, and pending outbox records. Abandoned matches never enter the result or outbox.
 
-## Persistence and current limits
+## Ranking, history, cache, and MSW
 
-Options and the last completed result use versioned localStorage keys. `beforeunload` and explicit pause-overlay exits abandon the active simulation without creating a result. Ranking/history network integration, MSW scenarios, and remote record persistence are intentionally not documented as implemented here and remain the next feature task.
+`src/api/contracts.ts` defines the ranking, history, and match contracts. Axios maps timeout, network, and HTTP failures to typed `ApiError` values. TanStack Query keys include page, page size, player, and configuration; query functions receive AbortSignals, retry only retryable errors, and invalidate ranking/history after a successful submit. MSW uses the same handlers in the browser and Vitest node server. Fixtures are deterministic per configuration and confirmed records are idempotent by `matchId`.
+
+The outbox writes a finished record before submitting it, deduplicates in-flight submissions, retains retryable failures, and flushes on startup, reconnect, and Retry. A successful response removes the record and invalidates both query families, so pending records recover after reload without duplicates.
+
+## Test instrumentation
+
+`?e2e=1` exposes `window.__PIRATE_E2E__`; `?clock=manual` stops real ticker advancement while `advance(ms)` calls the real fixed-step simulation and renders once. `?perf=1` exposes `window.__PIRATE_PERF__`, which records ticker frame times and entity counts in preallocated arrays without affecting normal play.
+
+## Limitations
+
+- Skipped E2E test: `e2e/touch.spec.ts` — `touch controls › touch buttons hold movement and firing concurrently and show portrait guidance` is skipped when the project is not `chromium-mobile`, because touch coverage requires the mobile device profile and real touch capability.
+- No E2E tests currently use `test.fixme`.
+- Islands are fixed rather than procedurally generated.
+- Collision geometry is circle-based rather than polygonal.
+- Reverse movement is not part of the design.
+- Performance and memory documents contain TODO measurement cells until profiling is run on the reference hardware.

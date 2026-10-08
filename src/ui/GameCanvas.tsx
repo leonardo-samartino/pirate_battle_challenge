@@ -5,6 +5,7 @@ import { AssetLoader } from '../game/render/AssetLoader';
 import { GameRenderer } from '../game/render/GameRenderer';
 import { publishHudState } from '../game/hudStore';
 import { isE2EManualClock, registerE2EBridge, unregisterE2EBridge } from '../testing/e2eHooks';
+import { recordPerfFrame } from '../testing/perfProbe';
 
 interface GameCanvasProps {
   simulation: Simulation;
@@ -52,6 +53,7 @@ export function GameCanvas({ simulation, onLoadProgress, onLoadError }: GameCanv
           if (cleanedUp || cancelled || !renderer || !app) return;
           if (!isE2EManualClock()) simulation.update(ticker.deltaMS);
           const state = simulation.getState();
+          recordPerfFrame(ticker.deltaMS, state, simulation.getConfig());
           renderer.render(state, simulation.drainEvents(), ticker.deltaMS / 1000);
           hudElapsedMs += ticker.deltaMS;
           if (hudElapsedMs >= 100) {

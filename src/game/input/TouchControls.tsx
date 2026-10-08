@@ -51,7 +51,7 @@ export function TouchControls({ onChange, disabled = false }: TouchControlsProps
           onPointerDown={(event) => {
             if (disabled) return;
             event.preventDefault();
-            event.currentTarget.setPointerCapture(event.pointerId);
+            if (event.isTrusted) event.currentTarget.setPointerCapture(event.pointerId);
             activePointers.current.set(event.pointerId, command);
             emit();
           }}
