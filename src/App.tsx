@@ -151,7 +151,7 @@ function App() {
   }, [finishMatch, screen, simulation, snapshot.status]);
 
   if (screen === 'loading') {
-    return <main className="game-shell center-screen"><section className="board-panel"><h1>Pirate Battle</h1><p>Loading assets... {Math.round(progress * 100)}%</p>{loadError && <><p role="alert">{loadError.message}</p><button className="gold-button" type="button" onClick={() => { setLoadError(undefined); setProgress(0); setLoadAttempt((value) => value + 1); }}>Retry</button></>}</section></main>;
+    return <main className="game-shell center-screen"><section className="board-panel loading-panel"><img className="menu-title" src={uiAssets.titlePirateBattle} alt="Pirate Battle" /><p>Loading assets... {Math.round(progress * 100)}%</p>{loadError && <><p role="alert">{loadError.message}</p><button className="gold-button" type="button" onClick={() => { setLoadError(undefined); setProgress(0); setLoadAttempt((value) => value + 1); }}>Retry</button></>}</section></main>;
   }
 
   if (screen === 'menu') {
@@ -188,7 +188,7 @@ function App() {
   return <main className="game-shell">
     <GameCanvas simulation={simulation} onLoadProgress={setProgress} onLoadError={setLoadError} />
     <Hud onPause={pauseMatch} />
-    <TouchControls onChange={(commands) => { touchCommands.current = commands; simulation.setInput(mergeInputCommands(keyboardCommands.current, commands)); }} disabled={snapshot.status !== 'running'} />
+    <TouchControls heading={snapshot.playerRotation} onChange={(commands) => { touchCommands.current = commands; simulation.setInput(mergeInputCommands(keyboardCommands.current, commands)); }} disabled={snapshot.status !== 'running'} />
     {snapshot.status === 'paused' && <PauseOverlay onResume={resumeMatch} onOptions={() => { simulation.abandon(); setScreen('options'); }} onMenu={() => { simulation.abandon(); setScreen('menu'); }} />}
   </main>;
 }

@@ -32,6 +32,10 @@ interface IslandView {
   mask: Graphics;
 }
 
+interface TrailView {
+  graphics: Graphics;
+}
+
 const SOUND_ASSETS = {
   shot: '/assets/sounds/cannon_fire_1.wav',
   hit: '/assets/sounds/ship_wood_hit_1.wav',
@@ -50,6 +54,7 @@ export class GameRenderer {
   private readonly effects = new Container();
   private readonly shipViews = new Map<string, ShipView>();
   private readonly projectileViews = new Map<string, Sprite>();
+  private readonly trailViews: TrailView[] = [];
   private readonly effectViews: EffectView[] = [];
   private readonly islandViews: IslandView[] = [];
   private readonly sounds = new Map<keyof typeof SOUND_ASSETS, HTMLAudioElement>();
@@ -113,6 +118,7 @@ export class GameRenderer {
       mask.destroy();
     });
     this.projectileViews.forEach((sprite) => sprite.destroy());
+    this.trailViews.forEach(({ graphics }) => graphics.destroy());
     this.effectViews.forEach((effect) => effect.sprite.destroy());
     this.sounds.forEach((sound) => {
       sound.pause();
@@ -124,6 +130,7 @@ export class GameRenderer {
     this.shipViews.clear();
     this.islandViews.length = 0;
     this.projectileViews.clear();
+    this.trailViews.length = 0;
     this.effectViews.length = 0;
   }
 
@@ -234,6 +241,28 @@ export class GameRenderer {
       sprite.rotation = Math.atan2(projectile.direction.y, projectile.direction.x);
       sprite.width = projectile.radius * 2;
       sprite.height = projectile.radius * 2;
+    });
+    while (this.trailViews.length < state.projectiles.length) {
+      const graphics = new Graphics();
+      this.projectiles.addChildAt(graphics, 0);
+      this.trailViews.push({ graphics });
+    }
+    this.trailViews.forEach(({ graphics }, index) => {
+      const projectile = state.projectiles[index];
+      if (!projectile) {
+        graphics.visible = false;
+        return;
+      }
+      graphics.visible = true;
+      const length = Math.min(24, 8 + projectile.distanceTravelled * 0.02);
+      const startX = projectile.position.x - projectile.direction.x * length;
+      const startY = projectile.position.y - projectile.direction.y * length;
+      const middleX = projectile.position.x - projectile.direction.x * length * 0.5;
+      const middleY = projectile.position.y - projectile.direction.y * length * 0.5;
+      const ageAlpha = Math.max(0.15, 1 - projectile.ageSeconds / this.config.projectile.lifetimeSeconds);
+      graphics.clear()
+        .moveTo(startX, startY).lineTo(middleX, middleY).stroke({ width: 5, color: 0xffffff, alpha: ageAlpha * 0.2 })
+        .moveTo(middleX, middleY).lineTo(projectile.position.x, projectile.position.y).stroke({ width: 3, color: 0xffffff, alpha: ageAlpha * 0.65 });
     });
   }
 

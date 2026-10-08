@@ -5,6 +5,7 @@ export interface HudSnapshot {
   remainingSeconds: number;
   playerHealth: number;
   status: MatchStatus;
+  playerRotation: number;
 }
 
 const EMPTY_SNAPSHOT: HudSnapshot = {
@@ -12,6 +13,7 @@ const EMPTY_SNAPSHOT: HudSnapshot = {
   remainingSeconds: 0,
   playerHealth: 0,
   status: 'running',
+  playerRotation: 0,
 };
 
 let snapshot = EMPTY_SNAPSHOT;
@@ -33,6 +35,7 @@ export const hudStore = {
       && snapshot.remainingSeconds === next.remainingSeconds
       && snapshot.playerHealth === next.playerHealth
       && snapshot.status === next.status
+      && snapshot.playerRotation === next.playerRotation
     ) return;
     snapshot = next;
     listeners.forEach((listener) => listener());
@@ -47,7 +50,7 @@ export function publishHudState(
   state: {
     score: number;
     elapsedSeconds: number;
-    player: { health: number };
+    player: { health: number; rotation: number };
     status: HudSnapshot['status'];
   },
   durationSeconds: number,
@@ -57,5 +60,6 @@ export function publishHudState(
     remainingSeconds: Math.max(0, durationSeconds - state.elapsedSeconds),
     playerHealth: state.player.health,
     status: state.status,
+    playerRotation: state.player.rotation,
   });
 }

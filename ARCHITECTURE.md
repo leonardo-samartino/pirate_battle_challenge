@@ -28,8 +28,7 @@ The outbox writes a finished record before submitting it, deduplicates in-flight
 
 ## Limitations
 
-- Skipped E2E test: `e2e/touch.spec.ts` — `touch controls › touch buttons hold movement and firing concurrently and show portrait guidance` is skipped when the project is not `chromium-mobile`, because touch coverage requires the mobile device profile and real touch capability.
-- No E2E tests currently use `test.fixme`.
+- `test.fixme` E2E test: `e2e/touch.spec.ts` — `touch controls › touch buttons hold movement and firing concurrently and show portrait guidance` remains fixme because CDP touch events do not reach the React joystick handler in this Playwright mobile profile after an honest pointer-event and CDP multi-touch attempt.
 - Islands are fixed rather than procedurally generated.
 - Collision geometry is circle-based rather than polygonal.
 - Reverse movement is not part of the design.

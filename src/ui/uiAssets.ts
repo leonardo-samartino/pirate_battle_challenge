@@ -26,6 +26,10 @@ export const uiAssets = {
   iconSettings: '/assets/png/default/ui/controls/icon_settings.png',
   iconTime: '/assets/png/default/ui/hud/icon_time.png',
   iconHeart: '/assets/png/default/ui/hud/icon_heart.png',
+  iconFireFront: '/assets/png/default/ui/controls/icon_fire_front.png',
+  iconFireLeft: '/assets/png/default/ui/controls/icon_fire_left.png',
+  iconFireRight: '/assets/png/default/ui/controls/icon_fire_right.png',
+  iconForward: '/assets/png/default/ui/controls/icon_forward.png',
 } as const;
 
 export type UiAssetName = keyof typeof uiAssets;
