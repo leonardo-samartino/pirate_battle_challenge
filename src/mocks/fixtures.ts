@@ -25,7 +25,7 @@ export function fixtureRecordsForConfig(config: MatchConfig): MatchRecord[] {
       playerId: `fixture-player-${(index % names.length) + 1}`,
       playerName: names[index % names.length],
       date: `2025-${String((index % 12) + 1).padStart(2, '0')}-${String((index % 28) + 1).padStart(2, '0')}T${String(index % 24).padStart(2, '0')}:00:00.000Z`,
-      score: Math.max(1, Math.round(scoreScale * (0.35 + variation * 0.65))),
+      score: Math.max(1, Math.round(scoreScale * ((30 - index) * 10 + variation))),
       durationSeconds: Math.round(config.sessionDurationSeconds * (0.45 + variation * 0.55)),
       endReason: index % 7 === 0 ? 'death' : 'time',
       config,

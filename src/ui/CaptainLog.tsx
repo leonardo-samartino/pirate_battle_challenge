@@ -29,9 +29,9 @@ export interface HistoryRow {
 export function Pagination({ page, totalPages, onChange }: PageProps) {
   return (
     <div className="pagination">
-      <button type="button" onClick={() => onChange(Math.max(1, page - 1))} disabled={totalPages <= 1 || page === 1}>Previous</button>
+      <button className="pagination-button" type="button" aria-label="Previous page" onClick={() => onChange(Math.max(1, page - 1))} disabled={totalPages <= 1 || page === 1}><img src={uiAssets.iconTurnLeft} alt="" aria-hidden="true" /></button>
       <span>PAGE {page} OF {totalPages}</span>
-      <button type="button" onClick={() => onChange(Math.min(totalPages, page + 1))} disabled={totalPages <= 1 || page === totalPages}>Next</button>
+      <button className="pagination-button" type="button" aria-label="Next page" onClick={() => onChange(Math.min(totalPages, page + 1))} disabled={totalPages <= 1 || page === totalPages}><img src={uiAssets.iconTurnRight} alt="" aria-hidden="true" /></button>
     </div>
   );
 }
@@ -93,8 +93,8 @@ export function CaptainLog({ onClose, lastResult, options }: CaptainLogProps) {
         {scenario !== 'success' && <p className="scenario-banner" role="status">Network scenario: {scenario}<button type="button" onClick={() => { resetScenario(); void flushOutbox(); setScenario('success'); }}>Reset</button></p>}
         {tab === 'ranking' && <p className="log-subtitle">{options.sessionDurationSeconds} SECOND BATTLES · {options.enemySpawnIntervalSeconds} SECOND SPAWN INTERVAL</p>}
         <div className="tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={tab === 'ranking'} onClick={() => { setTab('ranking'); setPage(1); }}>Ranking</button>
-          <button type="button" role="tab" aria-selected={tab === 'history'} onClick={() => { setTab('history'); setPage(1); }}>Match History</button>
+          <button className={`log-tab ${tab === 'ranking' ? 'log-tab-active' : ''}`} type="button" role="tab" aria-selected={tab === 'ranking'} onClick={() => { setTab('ranking'); setPage(1); }}>Ranking</button>
+          <button className={`log-tab ${tab === 'history' ? 'log-tab-active' : ''}`} type="button" role="tab" aria-selected={tab === 'history'} onClick={() => { setTab('history'); setPage(1); }}>Match History</button>
         </div>
         {activeQuery.isLoading ? <p role="status">Loading...</p>
           : activeQuery.isError ? <p role="alert">Unable to load records. <button type="button" onClick={() => void activeQuery.refetch()}>Retry</button></p>

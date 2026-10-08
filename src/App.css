@@ -39,7 +39,7 @@
   box-shadow: 0 16px 40px rgb(0 0 0 / 45%);
 }
 
-.board-panel h1, .board-panel h2 { color: var(--gold-light); margin: 0 0 14px; }
+.board-panel h1, .board-panel h2 { max-width: 100%; color: var(--gold-light); margin: 0 0 14px; font-size: clamp(24px, 7vw, 32px); line-height: 1.15; text-wrap: balance; overflow-wrap: anywhere; }
 .menu-title { display: block; width: 100%; height: auto; margin: -18px auto 8px; }
 .loading-panel .menu-title { max-width: 250px; }
 .subtitle, .controls-help, .board-panel p { color: var(--muted); }
@@ -105,8 +105,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .log-table th, .log-table td { padding: 8px 4px; border-bottom: 1px solid #54728c; }
 .you-row { color: var(--gold-light); font-weight: 700; }
 .tabs, .pagination { display: flex; justify-content: center; gap: 10px; align-items: center; margin: 18px 0; }
-.tabs button, .pagination button, .scenario-panel button, .scenario-banner button { padding: 8px 12px; color: #08060d; background: var(--gold-light); border: 1px solid #08060d; cursor: pointer; }
-.pagination button:disabled { color: #8d9aa5; background: #26333d; border-color: #68737b; cursor: not-allowed; opacity: 0.75; }
+.tabs button, .pagination button, .scenario-panel button, .scenario-banner button { cursor: pointer; }
+.log-tab { width: min(180px, 46%); height: 56px; padding: 0 12px; color: var(--ink); background: url('/assets/png/default/ui/menu/button_secondary_normal.png') center / 100% 100% no-repeat; border: 0; font-weight: 700; }
+.log-tab:hover, .log-tab:focus-visible { background-image: url('/assets/png/default/ui/menu/button_secondary_pressed.png'); }
+.log-tab-active { color: #08060d; background-image: url('/assets/png/default/ui/menu/button_primary_normal.png'); }
+.log-tab-active:hover, .log-tab-active:focus-visible { background-image: url('/assets/png/default/ui/menu/button_primary_hover.png'); }
+.pagination-button { display: grid; place-items: center; width: 48px; height: 48px; padding: 0; color: #08060d; background: url('/assets/png/default/ui/controls/button_round_normal.png') center / 100% 100% no-repeat; border: 0; }
+.pagination-button:hover, .pagination-button:focus-visible { background-image: url('/assets/png/default/ui/controls/button_round_hover.png'); }
+.pagination-button:active { background-image: url('/assets/png/default/ui/controls/button_round_pressed.png'); }
+.pagination-button img { width: 26px; height: 26px; }
+.pagination-button:disabled { cursor: not-allowed; opacity: 0.42; }
 .scenario-panel { display: grid; gap: 12px; margin-top: 18px; padding: 12px; color: var(--muted); background: rgb(3 12 28 / 72%); border: 1px solid #54728c; border-radius: 8px; font-size: 13px; text-align: left; }
 .scenario-panel summary { padding: 4px; color: var(--gold-light); cursor: pointer; font-weight: 700; }
 .scenario-panel select { width: 100%; padding: 8px; color: var(--ink); background: #071b35; border: 1px solid var(--gold); }

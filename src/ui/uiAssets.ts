@@ -30,6 +30,8 @@ export const uiAssets = {
   iconFireLeft: '/assets/png/default/ui/controls/icon_fire_left.png',
   iconFireRight: '/assets/png/default/ui/controls/icon_fire_right.png',
   iconForward: '/assets/png/default/ui/controls/icon_forward.png',
+  iconTurnLeft: '/assets/png/default/ui/controls/icon_turn_left.png',
+  iconTurnRight: '/assets/png/default/ui/controls/icon_turn_right.png',
 } as const;
 
 export type UiAssetName = keyof typeof uiAssets;
