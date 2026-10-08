@@ -17,24 +17,26 @@ The probe records every Pixi ticker delta and the number of player, enemy, proje
 | Field | Measurement |
 | --- | --- |
 | Hardware | Ryzen 5 7600X, RX 9060 XT, 16 GB RAM, Windows 11 |
-| Browser | TODO |
-| Resolution | TODO |
-| Match | 180 seconds, fixed seed, documented options |
-| FPS (`avgFps`) | TODO |
-| p95 frame time | TODO ms |
-| p99 frame time | TODO ms |
-| Frames over 16.7 ms | TODO |
-| Maximum entities | TODO |
-| Average entities | TODO |
+| Browser | Chrome 152 on desktop with DevTools Pixel-profile emulation |
+| Resolution | 1070x799, devicePixelRatio 2 |
+| Match | 180-second session, 4-second spawn interval, real time, production build via Vite preview |
+| FPS (`avgFps`) | 179.9 |
+| p95 frame time | 5.60 ms |
+| p99 frame time | 5.70 ms |
+| Frames over 16.7 ms | 2 |
+| Maximum entities | 15 |
+| Average entities | 7.74 |
 
 ### Memory cycles
 
 | Cycle | Heap after start/play/exit (MB) |
 | ---: | ---: |
-| 1 | TODO |
-| 2 | TODO |
-| 3 | TODO |
-| 4 | TODO |
-| 5 | TODO |
+| 1 | Not captured within the time limit |
+| 2 | Not captured within the time limit |
+| 3 | Not captured within the time limit |
+| 4 | Not captured within the time limit |
+| 5 | Not captured within the time limit |
 
-Limitations: these are manual measurements, browser scheduling and GPU drivers vary, the probe caps samples at 20,000 frames, and no claim should be made until the TODO cells are replaced with captured results.
+The measured heap trend cannot be classified as flat or growing because memory values were not captured within the time limit.
+
+Limitations: these are manual measurements; DevTools device emulation was enabled; the probe sample covers only the first approximately 111 seconds of the 181-second match because of the 20,000-frame cap; this is a single run; and the high-refresh monitor makes the recorded frame times low. Browser scheduling and GPU drivers vary. Heap growth cannot be assessed from this run.

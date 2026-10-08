@@ -32,4 +32,3 @@ The outbox writes a finished record before submitting it, deduplicates in-flight
 - Islands are fixed rather than procedurally generated.
 - Collision geometry is circle-based rather than polygonal.
 - Reverse movement is not part of the design.
-- Performance and memory documents contain TODO measurement cells until profiling is run on the reference hardware.
